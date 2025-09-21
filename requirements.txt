@@ -1,0 +1,9 @@
+langchain
+langchain-community
+langchain-groq
+langchain-google-genai
+streamlit
+PyMuPDF
+torch
+faiss-cpu
+langchain_huggingface
