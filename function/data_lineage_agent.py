@@ -123,7 +123,7 @@ def metadata_agent(state: AgentState) -> AgentState:
         print(schema)
         with open(FOLDER_NAME+"/"+schema_filename, "w") as f:
             f.write(json.dumps(schema))
-        llm=ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash")
         metadata = []
         for table in schema:
             # print(table) 
@@ -200,14 +200,31 @@ def transformation_code_agent(state: AgentState) -> AgentState:
         schema = state.get("schema")
         metadata = state.get("metadata")
         if language=="TechSpec_File":
+
             techspec_text=state.get("techspec_file")
+
+            filename=state.get("output_files").get("transform_code_agent")
+
+            with open(FOLDER_NAME+"/"+filename, "w", encoding="utf-8") as f:
+
+                f.write(techspec_text)
+
             return {**state, "transform_code": techspec_text}
+
         elif language=="Own_Script":
+
             own_script=state.get("own_script")
+
+            filename=state.get("output_files").get("transform_code_agent")
+
+            with open(FOLDER_NAME+"/"+filename, "w", encoding="utf-8") as f:
+
+                f.write(own_script)
+
             return {**state, "transform_code": own_script}
         else:
         # Initialize the Language Model
-            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2)
+            llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
             default_transform_instructions="""1.  **Extract:** Connect to the 'chinook.db' database and extract data from the 'customers', 'invoices', and 'invoice_items' tables into pandas DataFrames.
             2.  **Transform:**
                 - Merge these Tables to link customers to their invoices and the items on each invoice.
@@ -238,7 +255,7 @@ def transformation_code_agent(state: AgentState) -> AgentState:
             #     filename="chinook_transform_code.sql"
             # elif state.get("transform_code_language","python").lower() == "hiveql":
             #     filename="chinook_transform_code.txt"
-            filename=state.get("output_files").get("transform_code")
+            filename=state.get("output_files").get("transform_code_agent")
             # Create a prompt instance from the template
             prompt = PromptTemplate(
                 template=prompt_template,
@@ -275,7 +292,7 @@ def lineage_builder_agent(state: AgentState)-> AgentState:
     print("entered lineage builder agent")
     if RUN_COMPLETE:
         sample_transform_script= state["transform_code"]
-        llm=ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash")
         
         metadata_prompt_template = """
     You are an expert identifying data transformations for purposes of data lineage. Given the following code snippet{sample_transform_script},
@@ -304,7 +321,7 @@ def lineage_builder_agent(state: AgentState)-> AgentState:
         metadata_chain = prompt | structured_llm
 
         lineage_mining_response = metadata_chain.invoke({"sample_transform_script":sample_transform_script,})
-        filename=state.get("output_files").get("lineage_builder")
+        filename=state.get("output_files").get("lineage_builder_agent")
         with open(FOLDER_NAME+"/"+filename, "w") as f:
             f.write(lineage_mining_response.model_dump_json())
         print("created data lineage")
@@ -316,12 +333,12 @@ def lineage_builder_agent(state: AgentState)-> AgentState:
 
 graph_builder= StateGraph(AgentState)
 graph_builder.add_node("metadata_agent", metadata_agent)
-graph_builder.add_node("transform_code", transformation_code_agent)
-graph_builder.add_node("lineage_builder", lineage_builder_agent)
+graph_builder.add_node("transform_code_agent", transformation_code_agent)
+graph_builder.add_node("lineage_builder_agent", lineage_builder_agent)
 graph_builder.set_entry_point("metadata_agent")
-graph_builder.add_edge("metadata_agent", "transform_code")
-graph_builder.add_edge( "transform_code", "lineage_builder")
-graph_builder.set_finish_point("lineage_builder")
+graph_builder.add_edge("metadata_agent", "transform_code_agent")
+graph_builder.add_edge( "transform_code_agent", "lineage_builder_agent")
+graph_builder.set_finish_point("lineage_builder_agent")
 graph=graph_builder.compile()
 # transform_code_language can be (python, SQL, HiveQL)
 # response= graph.invoke(input={"transform_code_language":"SQL"})

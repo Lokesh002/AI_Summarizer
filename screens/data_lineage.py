@@ -52,8 +52,8 @@ async def data_lineage_screen():
             "transform_instructions":transform_instructions,
             "output_files":{"schema":"chinook_schema.json",
                 "metadata_agent":"chinook_metadata.json",
-                "transform_code":"chinook_transform_code.py",
-                "lineage_builder":"chinook_lineage.json"
+                "transform_code_agent":"chinook_transform_code.py",
+                "lineage_builder_agent":"chinook_lineage.json"
                 }},
              )# stream_mode="events")
         elif selection=="SQL":
@@ -61,8 +61,8 @@ async def data_lineage_screen():
             "transform_instructions":transform_instructions,
             "output_files":{"schema":"chinook_schema.json",
                 "metadata_agent":"chinook_metadata.json",
-                "transform_code":"chinook_transform_code.sql",
-                "lineage_builder":"chinook_lineage.json"
+                "transform_code_agent":"chinook_transform_code.sql",
+                "lineage_builder_agent":"chinook_lineage.json"
                 }}, 
             )
         elif selection=="HiveQL":
@@ -70,39 +70,45 @@ async def data_lineage_screen():
             "transform_instructions":transform_instructions,
             "output_files":{"schema":"chinook_schema.json",
                 "metadata_agent":"chinook_metadata.json",
-                "transform_code":"chinook_transform_code.txt",
-                "lineage_builder":"chinook_lineage.json"
+                "transform_code_agent":"chinook_transform_code.txt",
+                "lineage_builder_agent":"chinook_lineage.json"
                 }}, 
             )
         elif selection=="TechSpec File":
-            streaming_response=graph.astream_events({"transform_code_language":"TechSpec_File",
-            "techspec_file":techspec_text,
-            "output_files":{"schema":"chinook_schema.json",
-                "metadata_agent":"chinook_metadata.json",
-                "transform_code":"chinook_transform_code.txt",
-                "lineage_builder":"chinook_lineage.json"
-                }},
-            )
+            if techspec_file is None:
+                st.error("Please upload a techspec file.")
+                return
+            else:
+                streaming_response=graph.astream_events({"transform_code_language":"TechSpec_File",
+                "techspec_file":techspec_text if techspec_file is not None else "None",
+                "output_files":{"schema":"chinook_schema.json",
+                                "metadata_agent":"chinook_metadata.json",
+                                "transform_code_agent":"chinook_transform_code.txt",
+                                "lineage_builder_agent":"chinook_lineage.json"
+                                }})
         elif selection=="Own Script":
-            streaming_response=graph.astream_events({"transform_code_language":"Own_Script",
-            "own_script":own_script,
-            "output_files":{"schema":"chinook_schema.json",
-                "metadata_agent":"chinook_metadata.json",
-                "transform_code":"chinook_transform_code.txt",
-                "lineage_builder":"chinook_lineage.json"
-                }}
-            )
+            if own_script is None or own_script=="":
+                st.error("Please enter your own script.")
+                return
+            else:
+                streaming_response=graph.astream_events({"transform_code_language":"Own_Script",
+                "own_script":own_script if own_script is not None else "None",
+                "output_files":{"schema":"chinook_schema.json",
+                                "metadata_agent":"chinook_metadata.json",
+                                "transform_code_agent":"chinook_transform_code.txt",
+                                "lineage_builder_agent":"chinook_lineage.json"
+                                }})
         
         async for chunk in streaming_response:
             # show thinking spinner while chunk end is not retrieved
             
-            if chunk.get("event")=="on_chain_start" and chunk.get("name") in ["metadata_agent","transform_code","lineage_builder"]:
+            if chunk.get("event")=="on_chain_start" and chunk.get("name") in ["metadata_agent","transform_code_agent","lineage_builder_agent"]:
                 container=st.empty()
                 agent=chunk.get("name")
                 with container.expander(agent+" agent called: ", expanded=True):
                     st.write("Thinking...")
                                          
-            elif chunk.get("event")=="on_chain_end" and chunk.get("name") in ["metadata_agent","transform_code","lineage_builder"]:
+            elif chunk.get("event")=="on_chain_end" and chunk.get("name") in ["metadata_agent","transform_code_agent","lineage_builder_agent"]:
                 agent=chunk.get("name")
                 with container.expander(agent+" agent called: ", expanded=True):
                     filename=chunk["data"]["input"]["output_files"][agent]
