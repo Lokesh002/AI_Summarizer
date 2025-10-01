@@ -7,3 +7,4 @@ PyMuPDF
 torch
 faiss-cpu
 langchain_huggingface
+langgraph

@@ -15,7 +15,8 @@ def main():
                       st.Page("screens/upload_data.py", title="Upload Data"),
                       st.Page("screens/summarizer.py", title="Summarize"),
                       st.Page("screens/chatbot.py", title="Chat with Data"),
-                      st.Page("screens/file_manager.py", title="File Manager")])
+                      st.Page("screens/file_manager.py", title="File Manager"),
+                      st.Page("screens/data_lineage.py", title="Data Lineage Agent")])
     pg.run()
 
 if __name__ == "__main__":
